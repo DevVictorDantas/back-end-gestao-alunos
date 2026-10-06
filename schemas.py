@@ -16,6 +16,7 @@ Boas práticas que você deve aplicar:
 # DICA — o que você vai importar:
 from typing import Optional
 from pydantic import BaseModel, Field # type: ignore
+from datetime import datetime
 
 
 
@@ -49,9 +50,17 @@ class AlunoSaida(BaseModel):
     matricula: str
     media: float
 
+class UsuarioEntrada(BaseModel):
+    nome: str = Field(min_length=1, max_length=100)
+    username: str = Field(min_length=1, max_length=50)
+    senha: str = Field(min_length=8, max_length=72)  # Limite do bcrypt
 
-# --------------------------------------------------------------------------
-# DISCIPLINA  (Desafio 2)
-# --------------------------------------------------------------------------
-# TODO: DisciplinaEntrada (nome, carga_horaria) e DisciplinaSaida (id, nome,
-#   carga_horaria). Dica: carga_horaria=Field(gt=0) exige valor positivo.
+class UsuarioSaida(BaseModel):
+    id: int
+    nome: str
+    username: str
+    criado_em: datetime  # Timestamp de criação
+    
+class Login(BaseModel):
+    message: str
+    senha: str = Field(min_length=8, max_length=72)  # Limite do bcrypt

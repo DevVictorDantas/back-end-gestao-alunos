@@ -21,8 +21,8 @@ from fastapi import FastAPI, HTTPException, status # type: ignore
 from fastapi.responses import RedirectResponse # type: ignore
 from psycopg2.errors import UniqueViolation   # type: ignore # para tratar duplicidade
 import db
-from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida  # e disciplinas
-
+from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioSaida
+import auth
 
 # TODO: crie a aplicação -> app = FastAPI(title="Gestão de Alunos")
 #       (a variável PRECISA se chamar `app` — é o que o uvicorn procura.)
@@ -93,13 +93,14 @@ def excluir_aluno(id: int):
   if not db.excluir_aluno(id):
     raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
-# ========================= DISCIPLINAS (Desafio 2) =========================
-# POST /disciplinas (201, 409 se duplicado) · GET /disciplinas (200) ·
-# DELETE /disciplinas/{id} (204, 404 se não existir).
+# ========================= USUÁRIOS =========================
+@app.post("/registrar", response_model=UsuarioSaida, status_code=status.HTTP_201_CREATED)
+def registrar(usuario: UsuarioEntrada):
+    senha_hash = auth.gerar_hash(usuario.senha)
+    try:
+        usuario_criado = db.incluir_usuario(usuario.email, senha_hash)
+        return usuario_criado
+    except UniqueViolation:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email já registrado.")
 
 
-# ========================= MATRÍCULAS (Desafio 3) =========================
-# POST /alunos/{aluno_id}/matricular/{disciplina_id}
-#      -> 404 se aluno OU disciplina não existir; senão matricula.
-# GET  /alunos/{aluno_id}/disciplinas
-#      -> lista as disciplinas do aluno (usa db.disciplinas_do_aluno / JOIN).

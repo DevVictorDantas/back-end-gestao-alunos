@@ -89,7 +89,16 @@ def criar_tabelas():
     idade     INTEGER,
     matricula VARCHAR(20) UNIQUE NOT NULL,  
     media     NUMERIC(4,2) DEFAULT 0
-  );"""
+  );
+  
+  CREATE TABLE IF NOT EXISTS usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    senha_hash VARCHAR(72) NOT NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+  """
   executar_sql(sql)
 
 
@@ -154,20 +163,7 @@ def excluir_aluno(id):
   aluno_excluido = executar_sql(sql, (id,))
   return aluno_excluido
 
-# --------------------------------------------------------------------------
-# CRUD de DISCIPLINAS  (Desafio 2)
-# --------------------------------------------------------------------------
-# TODO: inserir_disciplina, listar_disciplinas, buscar_disciplina,
-#       excluir_disciplina — espelhando o CRUD de alunos.
-
-
-# --------------------------------------------------------------------------
-# MATRÍCULAS — relacionamento aluno <-> disciplina  (Desafio 3)
-# --------------------------------------------------------------------------
-# TODO: matricular(aluno_id, disciplina_id)
-#   INSERT na tabela matriculas. Dica: "ON CONFLICT DO NOTHING" evita erro se
-#   a matrícula já existir.
-#
-# TODO: disciplinas_do_aluno(aluno_id)
-#   Liste as disciplinas em que o aluno está matriculado. Dica: use JOIN entre
-#   disciplinas e matriculas.
+def inserir_usuario(nome, username, senha_hash):
+  sql = "INSERT INTO usuarios (nome, username, senha_hash) VALUES (%s, %s, %s) RETURNING id, nome, username, senha_hash;"
+  usuario_criado = executar_sql(sql, (nome, username, senha_hash))
+  return usuario_criado
