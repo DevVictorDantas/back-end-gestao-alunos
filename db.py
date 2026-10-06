@@ -26,7 +26,7 @@ import os
 import psycopg2  # type: ignore[reportMissingModuleSource]
 from typing import Optional
 from psycopg2.extras import RealDictCursor  # type: ignore[reportMissingModuleSource]
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 
 # TODO: carregue as variáveis do .env (load_dotenv) e monte um CONFIG lendo
 #       DB_HOST, DB_NAME, DB_USER, DB_PASSWORD (dica: os.getenv com um padrão).
