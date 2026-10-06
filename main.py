@@ -16,22 +16,33 @@ E explore em: http://127.0.0.1:8000/docs
 """
 
 # DICA — o que você vai importar:
-#   from typing import List
-#   from fastapi import FastAPI, HTTPException, status
-#   from psycopg2.errors import UniqueViolation   # para tratar duplicidade
-#   import db
-#   from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida  # e disciplinas
+from typing import List
+from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import RedirectResponse
+from psycopg2.errors import UniqueViolation   # para tratar duplicidade
+import db
+from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida  # e disciplinas
 
 
 # TODO: crie a aplicação -> app = FastAPI(title="Gestão de Alunos")
 #       (a variável PRECISA se chamar `app` — é o que o uvicorn procura.)
+app = FastAPI(title="Gestão de Alunos")
 
 # TODO: registre o startup para criar as tabelas:
 #   @app.on_event("startup")
 #   def ao_iniciar():
 #       db.criar_tabelas()
 
+@app.on_event("startup")
+def ao_iniciar():
+    db.criar_tabelas()
+
 # TODO: GET /  -> uma mensagem de boas-vindas (ex.: aponte para /docs).
+
+@app.get("/")
+def boas_vindas():
+    return RedirectResponse(url="/docs")
+
 
 
 # ========================= ALUNOS =========================
@@ -47,7 +58,40 @@ E explore em: http://127.0.0.1:8000/docs
 #   DELETE /alunos/{id}       -> 204 No Content; 404 se não existir.
 #
 # Lembre: use response_model=AlunoSaida e status_code=status.HTTP_201_CREATED etc.
+@app.post("/alunos", response_model=AlunoSaida, status_code=status.HTTP_201_CREATED)
+def criar_aluno(payload: AlunoEntrada):
+  try:
+    aluno_criado = db.inserir_aluno(payload.nome, payload.idade, payload.matricula, payload.media)
+    return aluno_criado
+  except UniqueViolation:
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Matrícula duplicada.")
+  
+@app.get("/alunos", response_model=List[AlunoSaida])
+def listar_alunos(
+    idade_minima: int | None = None,
+    media_minima: float | None = None,
+    q: str | None = None
+):
+    return db.listar_alunos(idade_minima, media_minima, q)
 
+@app.get("/alunos/{id}", response_model=AlunoSaida)
+def buscar_aluno(id: int):
+  aluno = db.buscar_aluno(id)
+  if aluno is None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aluno não encontrado.")
+  return aluno
+  
+@app.patch("/alunos/{id}", response_model=AlunoSaida)
+def atualizar_aluno(id: int, payload: AlunoAtualizacao):
+    if not db.buscar_aluno(id):
+        raise HTTPException(status_code=404, detail="Aluno não encontrado")
+    return db.atualizar_aluno(id, **payload.model_dump(exclude_unset=True))
+    
+  
+@app.delete("/alunos/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_aluno(id: int):
+  if not db.excluir_aluno(id):
+    raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
 # ========================= DISCIPLINAS (Desafio 2) =========================
 # POST /disciplinas (201, 409 se duplicado) · GET /disciplinas (200) ·
