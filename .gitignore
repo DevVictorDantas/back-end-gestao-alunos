@@ -1,0 +1,12 @@
+# Ambiente virtual Python
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Variáveis de ambiente (credenciais — NUNCA versionar)
+.env
+
+# Metadados do Windows/WSL
+*:Zone.Identifier
