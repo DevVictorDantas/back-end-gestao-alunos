@@ -164,6 +164,11 @@ def excluir_aluno(id):
   return aluno_excluido
 
 def inserir_usuario(nome, username, senha_hash):
-  sql = "INSERT INTO usuarios (nome, username, senha_hash) VALUES (%s, %s, %s) RETURNING id, nome, username, senha_hash;"
+  sql = "INSERT INTO usuarios (nome, username, senha_hash) VALUES (%s, %s, %s) RETURNING id, nome, username, criado_em;"
   usuario_criado = executar_sql(sql, (nome, username, senha_hash))
   return usuario_criado
+
+def buscar_usuario_por_username(username):
+  sql = "SELECT id, nome, username, senha_hash, criado_em FROM usuarios WHERE username = %s;"
+  usuario = executar_sql(sql, (username,), fetchone=True)
+  return usuario

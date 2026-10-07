@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException, status # type: ignore
 from fastapi.responses import RedirectResponse # type: ignore
 from psycopg2.errors import UniqueViolation   # type: ignore # para tratar duplicidade
 import db
-from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioSaida
+from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioLogin, UsuarioSaida
 import auth
 
 # TODO: crie a aplicação -> app = FastAPI(title="Gestão de Alunos")
@@ -95,12 +95,23 @@ def excluir_aluno(id: int):
 
 # ========================= USUÁRIOS =========================
 @app.post("/registrar", response_model=UsuarioSaida, status_code=status.HTTP_201_CREATED)
-def registrar(usuario: UsuarioEntrada):
-    senha_hash = auth.gerar_hash(usuario.senha)
+def registrar(payload: UsuarioEntrada):
+    senha_hash = auth.gerar_hash(payload.senha)
     try:
-        usuario_criado = db.incluir_usuario(usuario.email, senha_hash)
+        usuario_criado = db.inserir_usuario(payload.nome, payload.username, senha_hash)
         return usuario_criado
     except UniqueViolation:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email já registrado.")
-
-
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username já registrado.")
+    
+@app.post("/login", response_model=UsuarioSaida)
+def login(payload: UsuarioLogin):
+    usuario = db.buscar_usuario_por_username(payload.username)
+    
+    if usuario is None:
+        auth.conferir_senha(payload.senha, auth.HASH_FALSO)  # para não vazar tempo de resposta
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha inválidos")
+    
+    if not auth.conferir_senha(payload.senha, usuario["senha_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha inválidos")
+    
+    return {"access_token": auth.criar_token(username), "token_type": "bearer"}

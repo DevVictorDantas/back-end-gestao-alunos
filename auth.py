@@ -1,6 +1,15 @@
 import bcrypt
+import jwt
 
 LIMITE_BCRYPT = 72
+
+def criar_token(username: str) -> str:
+    agora = datetime.now(timezone.utc)
+    payload = {
+        "sub": username,
+        "exp": agora + timedelta(minutes=60),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def _en_bytes(senha: str) -> bytes:
     return senha.encode("utf-8")[:LIMITE_BCRYPT]

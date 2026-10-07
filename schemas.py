@@ -54,6 +54,10 @@ class UsuarioEntrada(BaseModel):
     nome: str = Field(min_length=1, max_length=100)
     username: str = Field(min_length=1, max_length=50)
     senha: str = Field(min_length=8, max_length=72)  # Limite do bcrypt
+    
+class UsuarioLogin(BaseModel):
+    username: str = Field(min_length=1, max_length=50)
+    senha: str = Field(min_length=8, max_length=72)  # Limite do bcrypt    
 
 class UsuarioSaida(BaseModel):
     id: int
