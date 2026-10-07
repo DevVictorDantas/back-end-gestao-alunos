@@ -65,6 +65,6 @@ class UsuarioSaida(BaseModel):
     username: str
     criado_em: datetime  # Timestamp de criação
     
-class Login(BaseModel):
-    message: str
-    senha: str = Field(min_length=8, max_length=72)  # Limite do bcrypt
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

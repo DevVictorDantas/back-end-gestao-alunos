@@ -1,5 +1,11 @@
 import bcrypt
 import jwt
+from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv # type: ignore
+import os
+
+load_dotenv()  # carrega variáveis do .env
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 LIMITE_BCRYPT = 72
 
@@ -10,6 +16,15 @@ def criar_token(username: str) -> str:
         "exp": agora + timedelta(minutes=60),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+def ler_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload["sub"]
+    except jwt.ExpiredSignatureError:
+        raise None
+    except jwt.InvalidTokenError:
+        raise None
 
 def _en_bytes(senha: str) -> bytes:
     return senha.encode("utf-8")[:LIMITE_BCRYPT]

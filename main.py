@@ -17,12 +17,25 @@ E explore em: http://127.0.0.1:8000/docs
 
 # DICA — o que você vai importar:
 from typing import List
-from fastapi import FastAPI, HTTPException, status # type: ignore
+from fastapi import Depends, FastAPI, HTTPException, status # type: ignore
 from fastapi.responses import RedirectResponse # type: ignore
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials # type: ignore
 from psycopg2.errors import UniqueViolation   # type: ignore # para tratar duplicidade
 import db
-from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioLogin, UsuarioSaida
+from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioLogin, UsuarioSaida, Token
 import auth
+
+seguranca = HTTPBearer()  # para extrair o token do header Authorization
+
+def usuario_logado(token: HTTPAuthorizationCredentials = Depends(seguranca)) -> dict:
+    username = auth.ler_token(token.credentials)
+    if username is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido ou expirado", headers={"WWW-Authenticate": "Bearer"})
+    
+    usuario = db.buscar_usuario_por_username(username)
+    if usuario is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado")
+    return usuario
 
 # TODO: crie a aplicação -> app = FastAPI(title="Gestão de Alunos")
 #       (a variável PRECISA se chamar `app` — é o que o uvicorn procura.)
@@ -59,7 +72,7 @@ def boas_vindas():
 #
 # Lembre: use response_model=AlunoSaida e status_code=status.HTTP_201_CREATED etc.
 @app.post("/alunos", response_model=AlunoSaida, status_code=status.HTTP_201_CREATED)
-def criar_aluno(payload: AlunoEntrada):
+def criar_aluno(payload: AlunoEntrada, usuario: dict = Depends(usuario_logado)):
   try:
     aluno_criado = db.inserir_aluno(payload.nome, payload.idade, payload.matricula, payload.media)
     return aluno_criado
@@ -82,20 +95,20 @@ def buscar_aluno(id: int):
   return aluno
   
 @app.patch("/alunos/{id}", response_model=AlunoSaida)
-def atualizar_aluno(id: int, payload: AlunoAtualizacao):
+def atualizar_aluno(id: int, payload: AlunoAtualizacao, usuario: dict = Depends(usuario_logado)):
     if not db.buscar_aluno(id):
         raise HTTPException(status_code=404, detail="Aluno não encontrado")
     return db.atualizar_aluno(id, **payload.model_dump(exclude_unset=True))
     
   
 @app.delete("/alunos/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def excluir_aluno(id: int):
+def excluir_aluno(id: int, usuario: dict = Depends(usuario_logado)):
   if not db.excluir_aluno(id):
     raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
 # ========================= USUÁRIOS =========================
 @app.post("/registrar", response_model=UsuarioSaida, status_code=status.HTTP_201_CREATED)
-def registrar(payload: UsuarioEntrada):
+def registrar(payload: UsuarioEntrada, usuario: dict = Depends(usuario_logado)):
     senha_hash = auth.gerar_hash(payload.senha)
     try:
         usuario_criado = db.inserir_usuario(payload.nome, payload.username, senha_hash)
@@ -103,7 +116,7 @@ def registrar(payload: UsuarioEntrada):
     except UniqueViolation:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username já registrado.")
     
-@app.post("/login", response_model=UsuarioSaida)
+@app.post("/login", response_model=Token)
 def login(payload: UsuarioLogin):
     usuario = db.buscar_usuario_por_username(payload.username)
     
@@ -114,4 +127,8 @@ def login(payload: UsuarioLogin):
     if not auth.conferir_senha(payload.senha, usuario["senha_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha inválidos")
     
-    return {"access_token": auth.criar_token(username), "token_type": "bearer"}
+    return {"access_token": auth.criar_token(payload.username), "token_type": "bearer"}
+
+@app.get("/eu", response_model=UsuarioSaida)
+def eu(usuario: dict = Depends(usuario_logado)):
+    return usuario
