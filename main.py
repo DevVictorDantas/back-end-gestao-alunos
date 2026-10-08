@@ -24,6 +24,23 @@ from psycopg2.errors import UniqueViolation   # type: ignore # para tratar dupli
 import db
 from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, UsuarioLogin, UsuarioSaida, Token
 import auth
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+
+app = FastAPI(title="Gestão de Alunos")
+
+ORIGENS_PERMITIDAS = [
+    "http://localhost:5173",    # Vite em dev
+    "http://127.0.0.1:5173",    # o MESMO endereço escrito de outro jeito —
+                                # para o navegador, outra origem. Liste os dois.
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGENS_PERMITIDAS,
+    allow_credentials=True,
+    allow_methods=["*"],        # GET, POST, PATCH, DELETE, OPTIONS...
+    allow_headers=["*"],        # inclui o Authorization, que usaremos no M19
+)
 
 seguranca = HTTPBearer()  # para extrair o token do header Authorization
 
@@ -39,7 +56,8 @@ def usuario_logado(token: HTTPAuthorizationCredentials = Depends(seguranca)) -> 
 
 # TODO: crie a aplicação -> app = FastAPI(title="Gestão de Alunos")
 #       (a variável PRECISA se chamar `app` — é o que o uvicorn procura.)
-app = FastAPI(title="Gestão de Alunos")
+
+
 
 # TODO: registre o startup para criar as tabelas:
 #   @app.on_event("startup")
@@ -128,6 +146,10 @@ def login(payload: UsuarioLogin):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha inválidos")
     
     return {"access_token": auth.criar_token(payload.username), "token_type": "bearer"}
+
+@app.get("/usuario", response_model=UsuarioSaida)
+def buscar_usuario(usuario: dict = Depends(usuario_logado)):
+    return usuario
 
 @app.get("/eu", response_model=UsuarioSaida)
 def eu(usuario: dict = Depends(usuario_logado)):
