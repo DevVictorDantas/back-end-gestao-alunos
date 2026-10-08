@@ -17,14 +17,14 @@ def criar_token(username: str) -> str:
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-def ler_token(token: str) -> str:
+def ler_token(token: str) -> str | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return payload["sub"]
     except jwt.ExpiredSignatureError:
-        raise None
+        return None
     except jwt.InvalidTokenError:
-        raise None
+        return None
 
 def _en_bytes(senha: str) -> bytes:
     return senha.encode("utf-8")[:LIMITE_BCRYPT]

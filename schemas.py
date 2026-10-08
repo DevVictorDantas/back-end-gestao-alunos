@@ -38,9 +38,9 @@ class AlunoEntrada(BaseModel):
 #   para o cliente enviar só o que quer mudar. (A matrícula não se altera.)
 
 class AlunoAtualizacao(BaseModel):
-    nome: Optional[str] = Field(min_length=1, max_length=100)
-    idade: Optional[int] = Field(ge=0, le=120)
-    media: Optional[float] = Field(default=0, ge=0, le=10)
+    nome: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    idade: Optional[int] = Field(default=None, ge=0, le=120)
+    media: Optional[float] = Field(default=None, ge=0, le=10)
 #
 # TODO: AlunoSaida  — o que a API devolve, incluindo o id.
 class AlunoSaida(BaseModel):

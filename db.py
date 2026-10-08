@@ -45,14 +45,7 @@ CONFIG = {
 #   Abra e devolva uma conexão psycopg2 usando o CONFIG.
 #   Dica: passe cursor_factory=RealDictCursor para as linhas virem como dicts.
 def conectar():
-  conexao = psycopg2.connect(
-    host = CONFIG["host"],
-    database = CONFIG["name"],
-    user = CONFIG["user"],
-    password = CONFIG["password"],
-    port = CONFIG["port"],
-    cursor_factory=RealDictCursor
-  )
+  conexao = psycopg2.connect(**CONFIG, cursor_factory=RealDictCursor)
   return conexao
 
 def executar_sql(sql, params=None, fetchone=False):
@@ -127,8 +120,8 @@ def listar_alunos(idade_minima=None, media_minima=None, q=None):
     condicoes.append("media >= %s")
     parametros.append(media_minima)
   if q is not None:
-    condicoes.append("nome ILIKE %s")
-    parametros.append(f"%{q}%")
+    condicoes.append("(nome ILIKE %s OR matricula ILIKE %s)")
+    parametros.extend([f"%{q}%", f"%{q}%"])  # um valor para cada %s
   if condicoes:
     sql += " WHERE " + " AND ".join(condicoes)
     
@@ -172,3 +165,13 @@ def buscar_usuario_por_username(username):
   sql = "SELECT id, nome, username, senha_hash, criado_em FROM usuarios WHERE username = %s;"
   usuario = executar_sql(sql, (username,), fetchone=True)
   return usuario
+
+def listar_usuarios():
+  sql = "SELECT id, nome, username, criado_em FROM usuarios ORDER BY id ASC;"
+  usuarios = executar_sql(sql)
+  return usuarios
+
+def excluir_usuario(id):
+  sql = "DELETE FROM usuarios WHERE id = %s;"
+  usuario_excluido = executar_sql(sql, (id,))
+  return usuario_excluido

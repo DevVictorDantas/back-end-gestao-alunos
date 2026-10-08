@@ -151,6 +151,15 @@ def login(payload: UsuarioLogin):
 def buscar_usuario(usuario: dict = Depends(usuario_logado)):
     return usuario
 
+@app.get("/usuarios", response_model=List[UsuarioSaida])
+def listar_usuarios(usuario: dict = Depends(usuario_logado)):
+    return db.listar_usuarios()
+
+@app.delete("/usuarios/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_usuario(id: int, usuario: dict = Depends(usuario_logado)):
+    if not db.excluir_usuario(id):
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
 @app.get("/eu", response_model=UsuarioSaida)
 def eu(usuario: dict = Depends(usuario_logado)):
     return usuario
