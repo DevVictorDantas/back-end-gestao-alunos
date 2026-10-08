@@ -135,11 +135,3 @@ Terminou os desafios acima? Sugestões para levar o projeto ao próximo nível:
 - **Deploy:** empacote com **Docker** e publique (Render, Fly.io, Railway).
 - **Frontend:** consuma a API a partir de um app React/Flutter ou um HTML
   simples com `fetch()`.
-
-## Tecnologias
-
-- [Python 3](https://www.python.org/)
-- [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
-- [PostgreSQL](https://www.postgresql.org/) via [psycopg2](https://www.psycopg.org/)
-- [Pydantic](https://docs.pydantic.dev/) para validação
-- [python-dotenv](https://pypi.org/project/python-dotenv/) para credenciais
