@@ -16,6 +16,8 @@ E explore em: http://127.0.0.1:8000/docs
 """
 
 # DICA — o que você vai importar:
+import os
+from contextlib import asynccontextmanager
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status # type: ignore
 from fastapi.responses import RedirectResponse # type: ignore
@@ -26,12 +28,20 @@ from schemas import AlunoEntrada, AlunoAtualizacao, AlunoSaida, UsuarioEntrada, 
 import auth
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
-app = FastAPI(title="Gestão de Alunos")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.criar_tabelas()  # roda uma vez, quando a API sobe
+    yield
 
+app = FastAPI(title="Gestão de Alunos", lifespan=lifespan)
+
+# Em dev, o Vite (localhost e 127.0.0.1 são origens diferentes para o navegador).
+# Em produção, defina CORS_ORIGINS com a URL do front, separadas por vírgula:
+#   CORS_ORIGINS=https://meu-front.vercel.app
 ORIGENS_PERMITIDAS = [
-    "http://localhost:5173",    # Vite em dev
-    "http://127.0.0.1:5173",    # o MESMO endereço escrito de outro jeito —
-                                # para o navegador, outra origem. Liste os dois.
+    origem.strip()
+    for origem in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if origem.strip()
 ]
 
 app.add_middleware(
@@ -63,10 +73,6 @@ def usuario_logado(token: HTTPAuthorizationCredentials = Depends(seguranca)) -> 
 #   @app.on_event("startup")
 #   def ao_iniciar():
 #       db.criar_tabelas()
-
-@app.on_event("startup")
-def ao_iniciar():
-    db.criar_tabelas()
 
 # TODO: GET /  -> uma mensagem de boas-vindas (ex.: aponte para /docs).
 
@@ -101,12 +107,13 @@ def criar_aluno(payload: AlunoEntrada, usuario: dict = Depends(usuario_logado)):
 def listar_alunos(
     idade_minima: int | None = None,
     media_minima: float | None = None,
-    q: str | None = None
+    q: str | None = None,
+    usuario: dict = Depends(usuario_logado),
 ):
     return db.listar_alunos(idade_minima, media_minima, q)
 
 @app.get("/alunos/{id}", response_model=AlunoSaida)
-def buscar_aluno(id: int):
+def buscar_aluno(id: int, usuario: dict = Depends(usuario_logado)):
   aluno = db.buscar_aluno(id)
   if aluno is None:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aluno não encontrado.")

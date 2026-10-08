@@ -23,6 +23,7 @@ referência ao escrever criar_tabelas().
 
 # DICA — bibliotecas que você provavelmente vai usar:
 import os
+from contextlib import closing
 import psycopg2  # type: ignore[reportMissingModuleSource]
 from typing import Optional
 from psycopg2.extras import RealDictCursor  # type: ignore[reportMissingModuleSource]
@@ -33,23 +34,32 @@ from dotenv import load_dotenv # type: ignore
 
 load_dotenv()
 
+# Em produção (Render, Railway, Neon, Supabase...) o banco costuma vir como
+# uma URL única em DATABASE_URL. Se ela existir, tem prioridade sobre o CONFIG.
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 CONFIG = {
   "host": os.getenv("DB_HOST"),
   "database": os.getenv("DB_NAME"),
   "user": os.getenv("DB_USER"),
   "password": os.getenv("DB_PASSWORD"),
   "port": os.getenv("DB_PORT"),
+  # bancos gerenciados exigem SSL ("require"); localmente "prefer" funciona sem.
+  "sslmode": os.getenv("DB_SSLMODE", "prefer"),
 }
 
 # TODO: def conectar():
 #   Abra e devolva uma conexão psycopg2 usando o CONFIG.
 #   Dica: passe cursor_factory=RealDictCursor para as linhas virem como dicts.
 def conectar():
-  conexao = psycopg2.connect(**CONFIG, cursor_factory=RealDictCursor)
-  return conexao
+  if DATABASE_URL:
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+  return psycopg2.connect(**CONFIG, cursor_factory=RealDictCursor)
 
 def executar_sql(sql, params=None, fetchone=False):
-  with psycopg2.connect(**CONFIG) as con, con.cursor(cursor_factory=RealDictCursor) as cur:
+  # closing() fecha a conexão no fim: o "with" do psycopg2 sozinho só faz
+  # commit/rollback e deixaria a conexão aberta (estoura o limite do banco).
+  with closing(conectar()) as con, con, con.cursor() as cur:
     cur.execute(sql, params)
     sql_limpo = sql.strip().upper()
     

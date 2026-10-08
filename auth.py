@@ -6,6 +6,9 @@ import os
 
 load_dotenv()  # carrega variáveis do .env
 SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    # Sem a chave, nenhum token pode ser assinado: melhor falhar já no startup.
+    raise RuntimeError("Defina SECRET_KEY no .env (ou nas variáveis do servidor).")
 
 LIMITE_BCRYPT = 72
 

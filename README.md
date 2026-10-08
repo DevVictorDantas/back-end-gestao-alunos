@@ -94,6 +94,16 @@ uvicorn main:app --reload
 Com a API no ar, abra <http://127.0.0.1:8000/docs> para explorar os endpoints,
 e rode `bash testar_api.sh` (em outro terminal) para checar os status.
 
+## Deploy
+
+- **Comando de start:** `uvicorn main:app --host 0.0.0.0 --port $PORT` (já está no `Procfile`).
+- **Variáveis de ambiente no servidor:**
+  - `SECRET_KEY` — obrigatória (a API não sobe sem ela);
+  - `DATABASE_URL` — ou os `DB_*` separados;
+  - `DB_SSLMODE=require` — para bancos gerenciados que exigem SSL;
+  - `CORS_ORIGINS` — URL do front publicado (ex.: `https://meu-front.vercel.app`).
+- **Versão do Python:** 3.12 (arquivo `.python-version`).
+
 ## Endpoints
 
 Todos os endpoints abaixo são **para você implementar** (veja `DESAFIOS.md`):
